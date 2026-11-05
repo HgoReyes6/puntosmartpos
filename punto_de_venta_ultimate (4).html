@@ -1,0 +1,1766 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>POS Ultimate - Sistema Completo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: { primary: '#4f46e5', secondary: '#1e293b', darkbg: '#0f172a' },
+                    fontFamily: { sans: ['Inter', 'sans-serif'] }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; overflow: hidden; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+        
+        #print-section { display: none; }
+
+        /* Print Styles */
+        @media print {
+            body * { visibility: hidden; }
+            #print-section { 
+                display: block; position: absolute; left: 0; top: 0; width: 80mm; padding: 5mm; 
+                font-family: 'Courier New', Courier, monospace; font-size: 12px; color: black; background: white;
+            }
+            #print-section * { visibility: visible; }
+            .no-print { display: none !important; }
+        }
+    </style>
+</head>
+<body class="h-full bg-darkbg text-slate-100 flex">
+
+    <!-- ==================== PIN LOGIN OVERLAY ==================== -->
+    <div id="login-overlay" class="fixed inset-0 bg-darkbg z-[100] flex flex-col items-center justify-center transition-opacity duration-500">
+        <div class="bg-secondary p-8 rounded-2xl shadow-2xl w-full max-w-sm border border-slate-700 text-center">
+            <div class="w-16 h-16 bg-primary/20 text-primary rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">
+                <i class="fa-solid fa-lock"></i>
+            </div>
+            <h2 class="text-2xl font-bold mb-2">Iniciar Sesión</h2>
+            <p class="text-sm text-slate-400 mb-6">Bienvenido, ingresa tu PIN de acceso</p>
+            
+            <input type="password" id="pin-input" readonly class="w-full text-center text-3xl tracking-[0.5em] bg-slate-900 border border-slate-700 rounded-xl py-3 mb-6 focus:outline-none text-white font-mono">
+            
+            <div class="grid grid-cols-3 gap-3 mb-4">
+                <!-- Numpad -->
+                <button onclick="appendPin(1)" class="bg-slate-800 hover:bg-slate-700 py-4 rounded-xl text-xl font-bold transition">1</button>
+                <button onclick="appendPin(2)" class="bg-slate-800 hover:bg-slate-700 py-4 rounded-xl text-xl font-bold transition">2</button>
+                <button onclick="appendPin(3)" class="bg-slate-800 hover:bg-slate-700 py-4 rounded-xl text-xl font-bold transition">3</button>
+                <button onclick="appendPin(4)" class="bg-slate-800 hover:bg-slate-700 py-4 rounded-xl text-xl font-bold transition">4</button>
+                <button onclick="appendPin(5)" class="bg-slate-800 hover:bg-slate-700 py-4 rounded-xl text-xl font-bold transition">5</button>
+                <button onclick="appendPin(6)" class="bg-slate-800 hover:bg-slate-700 py-4 rounded-xl text-xl font-bold transition">6</button>
+                <button onclick="appendPin(7)" class="bg-slate-800 hover:bg-slate-700 py-4 rounded-xl text-xl font-bold transition">7</button>
+                <button onclick="appendPin(8)" class="bg-slate-800 hover:bg-slate-700 py-4 rounded-xl text-xl font-bold transition">8</button>
+                <button onclick="appendPin(9)" class="bg-slate-800 hover:bg-slate-700 py-4 rounded-xl text-xl font-bold transition">9</button>
+                <button onclick="clearPin()" class="bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 py-4 rounded-xl text-lg font-bold transition"><i class="fa-solid fa-delete-left"></i></button>
+                <button onclick="appendPin(0)" class="bg-slate-800 hover:bg-slate-700 py-4 rounded-xl text-xl font-bold transition">0</button>
+                <button onclick="submitPin()" class="bg-primary hover:bg-primary/80 py-4 rounded-xl text-xl font-bold shadow-lg shadow-primary/30 transition"><i class="fa-solid fa-arrow-right"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== SIDEBAR DASHBOARD ==================== -->
+    <aside id="sidebar" class="w-20 md:w-64 bg-secondary border-r border-slate-700 flex flex-col shrink-0 transition-all z-40 hidden">
+        <div class="h-16 flex items-center justify-center md:justify-start md:px-6 border-b border-slate-700">
+            <i class="fa-solid fa-layer-group text-primary text-2xl"></i>
+            <span class="ml-3 font-bold text-lg hidden md:block">POS Ultimate</span>
+        </div>
+        
+        <nav class="flex-1 overflow-y-auto py-4 space-y-1 px-2 md:px-3">
+            <button onclick="navTo('pos')" id="nav-pos" class="nav-btn w-full flex items-center p-3 rounded-xl hover:bg-slate-800 transition text-left group active-nav">
+                <i class="fa-solid fa-cash-register text-lg text-slate-400 group-[.active-nav]:text-primary w-6 text-center"></i>
+                <span class="ml-3 text-sm font-medium hidden md:block group-[.active-nav]:text-white text-slate-400">Punto de Venta</span>
+            </button>
+            <button onclick="navTo('held')" id="nav-held" class="nav-btn w-full flex items-center p-3 rounded-xl hover:bg-slate-800 transition text-left group">
+                <i class="fa-solid fa-clock-rotate-left text-lg text-slate-400 group-[.active-nav]:text-primary w-6 text-center"></i>
+                <span class="ml-3 text-sm font-medium hidden md:block group-[.active-nav]:text-white text-slate-400">Cuentas en Espera</span>
+                <span id="badge-held" class="ml-auto bg-primary text-white text-[10px] px-2 py-0.5 rounded-full hidden md:block">0</span>
+            </button>
+            <div class="my-2 border-t border-slate-700/50"></div>
+            <button onclick="navTo('inventory')" id="nav-inventory" class="nav-btn admin-only w-full flex items-center p-3 rounded-xl hover:bg-slate-800 transition text-left group">
+                <i class="fa-solid fa-boxes-stacked text-lg text-slate-400 group-[.active-nav]:text-primary w-6 text-center"></i>
+                <span class="ml-3 text-sm font-medium hidden md:block group-[.active-nav]:text-white text-slate-400">Inventario</span>
+            </button>
+            <button onclick="navTo('reception')" id="nav-reception" class="nav-btn admin-only w-full flex items-center p-3 rounded-xl hover:bg-slate-800 transition text-left group">
+                <i class="fa-solid fa-truck-ramp-box text-lg text-slate-400 group-[.active-nav]:text-primary w-6 text-center"></i>
+                <span class="ml-3 text-sm font-medium hidden md:block group-[.active-nav]:text-white text-slate-400">Recepción</span>
+            </button>
+            <button onclick="navTo('mermas')" id="nav-mermas" class="nav-btn w-full flex items-center p-3 rounded-xl hover:bg-slate-800 transition text-left group">
+                <i class="fa-solid fa-dumpster text-lg text-slate-400 group-[.active-nav]:text-primary w-6 text-center"></i>
+                <span class="ml-3 text-sm font-medium hidden md:block group-[.active-nav]:text-white text-slate-400">Mermas</span>
+            </button>
+            <div class="my-2 border-t border-slate-700/50"></div>
+            <button onclick="navTo('customers')" id="nav-customers" class="nav-btn w-full flex items-center p-3 rounded-xl hover:bg-slate-800 transition text-left group">
+                <i class="fa-solid fa-users text-lg text-slate-400 group-[.active-nav]:text-primary w-6 text-center"></i>
+                <span class="ml-3 text-sm font-medium hidden md:block group-[.active-nav]:text-white text-slate-400">Clientes (Crédito)</span>
+            </button>
+            <button onclick="navTo('reports')" id="nav-reports" class="nav-btn admin-only w-full flex items-center p-3 rounded-xl hover:bg-slate-800 transition text-left group">
+                <i class="fa-solid fa-chart-line text-lg text-slate-400 group-[.active-nav]:text-primary w-6 text-center"></i>
+                <span class="ml-3 text-sm font-medium hidden md:block group-[.active-nav]:text-white text-slate-400">Reportes & Cortes</span>
+            </button>
+            <button onclick="navTo('config')" id="nav-config" class="nav-btn admin-only w-full flex items-center p-3 rounded-xl hover:bg-slate-800 transition text-left group">
+                <i class="fa-solid fa-gear text-lg text-slate-400 group-[.active-nav]:text-primary w-6 text-center"></i>
+                <span class="ml-3 text-sm font-medium hidden md:block group-[.active-nav]:text-white text-slate-400">Configuración</span>
+            </button>
+            <button onclick="navTo('users')" id="nav-users" class="nav-btn admin-only w-full flex items-center p-3 rounded-xl hover:bg-slate-800 transition text-left group">
+                <i class="fa-solid fa-user-shield text-lg text-slate-400 group-[.active-nav]:text-primary w-6 text-center"></i>
+                <span class="ml-3 text-sm font-medium hidden md:block group-[.active-nav]:text-white text-slate-400">Usuarios</span>
+            </button>
+        </nav>
+
+        <div class="p-4 border-t border-slate-700 text-center md:text-left">
+            <div class="flex items-center space-x-3 mb-4 justify-center md:justify-start">
+                <div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-sm font-bold" id="user-avatar">A</div>
+                <div class="hidden md:block">
+                    <div class="text-xs text-white font-bold" id="user-name">Admin</div>
+                    <div class="text-[10px] text-slate-400" id="user-role">Administrador</div>
+                </div>
+            </div>
+            <button onclick="logout()" class="w-full bg-slate-800 hover:bg-rose-500/20 hover:text-rose-400 text-slate-400 py-2 rounded-xl text-xs font-bold transition flex items-center justify-center md:justify-start md:px-4">
+                <i class="fa-solid fa-right-from-bracket"></i>
+                <span class="ml-2 hidden md:inline">Cerrar Sesión</span>
+            </button>
+        </div>
+    </aside>
+
+    <!-- ==================== MAIN CONTENT AREA ==================== -->
+    <main id="app-container" class="flex-1 flex flex-col min-w-0 bg-darkbg hidden relative">
+        
+        <!-- Header -->
+        <header class="h-16 border-b border-slate-800 px-6 flex items-center justify-between shrink-0 bg-secondary/50 backdrop-blur-sm z-30">
+            <h2 id="header-title" class="font-bold text-lg">Punto de Venta</h2>
+            <div class="flex items-center space-x-4">
+                <div class="text-xs text-slate-400 hidden sm:block" id="current-date-time"></div>
+            </div>
+        </header>
+
+        <!-- VIEWS -->
+        <div class="flex-1 overflow-hidden relative">
+            
+            <!-- VIEW: POS -->
+            <div id="view-pos" class="app-view h-full flex flex-col md:flex-row absolute inset-0">
+                <!-- Overlay Caja Cerrada (NEW) -->
+                <div id="caja-cerrada-overlay" class="absolute inset-0 bg-slate-900/95 backdrop-blur-md z-50 flex-col items-center justify-center hidden">
+                    <div class="text-rose-500 text-6xl mb-4"><i class="fa-solid fa-lock"></i></div>
+                    <h2 class="text-3xl font-bold text-white mb-2">Caja Cerrada</h2>
+                    <p class="text-slate-400 mb-6 text-center max-w-md">No se pueden realizar ventas. Debes asignar un fondo inicial para abrir la caja.</p>
+                    <button onclick="navTo('reports'); openAperturaModal();" class="bg-emerald-600 hover:bg-emerald-500 px-6 py-3 rounded-xl font-bold text-white shadow-lg transition">Abrir Caja Ahora</button>
+                </div>
+
+                <!-- Catalog -->
+                <div class="flex-1 flex flex-col p-4 sm:p-6 overflow-hidden">
+                    <div class="flex flex-col sm:flex-row gap-4 mb-4">
+                        <div class="relative flex-1">
+                            <i class="fa-solid fa-barcode absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                            <input type="text" id="pos-search" onkeyup="handlePOSSearch(event)" placeholder="Escanear código o buscar nombre (Enter)" class="w-full bg-secondary border border-slate-700 rounded-xl pl-11 pr-4 py-3 text-sm focus:outline-none focus:border-primary transition text-white">
+                        </div>
+                        <select id="pos-category" onchange="renderPOSProducts()" class="bg-secondary border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary text-white">
+                            <option value="all">Todas las Categorías</option>
+                            <option value="Abarrotes">Abarrotes</option>
+                            <option value="Papelería">Papelería</option>
+                            <option value="Bebidas alcohólicas">Bebidas alcohólicas</option>
+                            <option value="Frutas y verduras">Frutas y verduras</option>
+                        </select>
+                    </div>
+                    <div id="pos-grid" class="flex-1 overflow-y-auto grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 pb-20 md:pb-0 pr-2 content-start">
+                        <!-- Products injected here -->
+                    </div>
+                </div>
+
+                <!-- Cart Sidebar -->
+                <div class="w-full md:w-96 bg-secondary border-l border-slate-800 flex flex-col shrink-0 z-20 absolute md:relative bottom-0 md:bottom-auto h-[60vh] md:h-full rounded-t-3xl md:rounded-none shadow-[0_-10px_40px_rgba(0,0,0,0.3)] md:shadow-none transition-transform duration-300 translate-y-[calc(100%-4rem)] md:translate-y-0" id="mobile-cart">
+                    
+                    <!-- Mobile handle -->
+                    <div class="h-16 flex items-center justify-between px-4 border-b border-slate-700 cursor-pointer md:cursor-auto" onclick="toggleMobileCart()">
+                        <div class="flex items-center space-x-2">
+                            <i class="fa-solid fa-cart-shopping text-primary"></i>
+                            <span class="font-bold">Carrito</span>
+                            <span id="mobile-cart-badge" class="bg-primary text-xs px-2 py-0.5 rounded-full md:hidden">0</span>
+                        </div>
+                        <i class="fa-solid fa-chevron-up text-slate-400 md:hidden transition-transform" id="mobile-cart-icon"></i>
+                        
+                        <div class="hidden md:flex space-x-2">
+                            <button onclick="holdCart()" class="text-xs bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded-lg transition" title="Guardar cuenta en espera"><i class="fa-solid fa-pause"></i></button>
+                            <button onclick="clearCart()" class="text-xs bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 px-3 py-1.5 rounded-lg transition"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </div>
+
+                    <div class="flex md:hidden space-x-2 px-4 py-2 border-b border-slate-700 bg-slate-800/50">
+                         <button onclick="holdCart()" class="flex-1 text-xs bg-slate-700 py-1.5 rounded-lg">Guardar</button>
+                         <button onclick="clearCart()" class="flex-1 text-xs bg-rose-500/20 text-rose-400 py-1.5 rounded-lg">Limpiar</button>
+                    </div>
+
+                    <div id="cart-items" class="flex-1 overflow-y-auto p-4 space-y-2">
+                        <!-- Cart Items injected here -->
+                    </div>
+
+                    <div class="p-4 bg-slate-900 border-t border-slate-800 space-y-3 shrink-0">
+                        <div class="flex justify-between text-slate-400 text-xs">
+                            <span>Subtotal</span><span id="cart-subtotal">$0.00</span>
+                        </div>
+                        <div class="flex justify-between text-slate-400 text-xs">
+                            <span>IVA (16% inc.)</span><span id="cart-tax">$0.00</span>
+                        </div>
+                        <div class="flex justify-between text-lg font-bold text-white pt-2 border-t border-slate-700">
+                            <span>Total</span><span id="cart-total" class="text-primary">$0.00</span>
+                        </div>
+                        <button onclick="openCheckout()" id="btn-checkout" disabled class="w-full bg-primary hover:bg-primary/80 disabled:opacity-50 disabled:cursor-not-allowed py-3 rounded-xl font-bold shadow-lg shadow-primary/20 transition flex items-center justify-center space-x-2">
+                            <i class="fa-solid fa-cash-register"></i> <span>Cobrar</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW: HELD CARTS -->
+            <div id="view-held" class="app-view hidden absolute inset-0 p-6 overflow-y-auto">
+                <div class="max-w-4xl mx-auto">
+                    <h3 class="text-xl font-bold mb-4">Cuentas en Espera</h3>
+                    <div id="held-carts-list" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Injected via JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW: INVENTORY -->
+            <div id="view-inventory" class="app-view hidden absolute inset-0 p-6 flex flex-col">
+                <div class="flex justify-between items-center mb-6">
+                    <div class="relative w-full max-w-md">
+                        <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                        <input type="text" id="inv-search" oninput="renderInventory()" placeholder="Buscar producto..." class="w-full bg-secondary border border-slate-700 rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:border-primary">
+                    </div>
+                    <button onclick="openProductModal()" class="bg-primary hover:bg-primary/80 px-4 py-2 rounded-lg text-sm font-bold transition flex items-center shadow-lg"><i class="fa-solid fa-plus mr-2"></i> Nuevo</button>
+                </div>
+                <div class="flex-1 overflow-auto bg-secondary border border-slate-700 rounded-xl">
+                    <table class="w-full text-left text-sm whitespace-nowrap">
+                        <thead class="bg-slate-800 text-slate-300 sticky top-0">
+                            <tr>
+                                <th class="p-4 font-semibold">Código</th>
+                                <th class="p-4 font-semibold">Producto</th>
+                                <th class="p-4 font-semibold">Categoría</th>
+                                <th class="p-4 font-semibold">Precio Venta</th>
+                                <th class="p-4 font-semibold">Stock</th>
+                                <th class="p-4 font-semibold text-center">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="inv-tbody" class="divide-y divide-slate-700/50"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- VIEW: RECEPTION -->
+            <div id="view-reception" class="app-view hidden absolute inset-0 p-6 flex flex-col items-center justify-center">
+                <div class="bg-secondary p-8 rounded-2xl border border-slate-700 max-w-md w-full text-center shadow-xl">
+                    <div class="text-4xl text-primary mb-4"><i class="fa-solid fa-barcode"></i></div>
+                    <h3 class="text-xl font-bold mb-2">Recepción Rápida</h3>
+                    <p class="text-sm text-slate-400 mb-6">Escanea el código de barras para sumar inventario o registrar un nuevo producto.</p>
+                    <input type="text" id="rec-barcode" onkeyup="handleReception(event)" placeholder="Escanear o escribir código..." class="w-full bg-slate-900 border border-slate-600 rounded-xl px-4 py-3 text-center text-lg focus:outline-none focus:border-primary transition text-white mb-2">
+                    <p class="text-xs text-slate-500">Presiona Enter para procesar</p>
+                </div>
+            </div>
+
+            <!-- VIEW: MERMAS -->
+            <div id="view-mermas" class="app-view hidden absolute inset-0 p-6 flex flex-col">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold">Registro de Mermas</h3>
+                    <button onclick="openMermaModal()" class="bg-orange-600 hover:bg-orange-500 px-4 py-2 rounded-lg text-sm font-bold transition flex items-center shadow-lg"><i class="fa-solid fa-minus-circle mr-2"></i> Registrar Merma</button>
+                </div>
+                <div class="flex-1 overflow-auto bg-secondary border border-slate-700 rounded-xl">
+                    <table class="w-full text-left text-sm whitespace-nowrap">
+                        <thead class="bg-slate-800 text-slate-300 sticky top-0">
+                            <tr>
+                                <th class="p-4 font-semibold">Fecha</th>
+                                <th class="p-4 font-semibold">Producto</th>
+                                <th class="p-4 font-semibold">Cantidad</th>
+                                <th class="p-4 font-semibold">Motivo</th>
+                                <th class="p-4 font-semibold">Usuario</th>
+                            </tr>
+                        </thead>
+                        <tbody id="mermas-tbody" class="divide-y divide-slate-700/50"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- VIEW: CUSTOMERS -->
+            <div id="view-customers" class="app-view hidden absolute inset-0 p-6 flex flex-col">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold">Directorio de Clientes</h3>
+                    <button onclick="openCustomerModal()" class="bg-emerald-600 hover:bg-emerald-500 px-4 py-2 rounded-lg text-sm font-bold transition flex items-center shadow-lg"><i class="fa-solid fa-user-plus mr-2"></i> Nuevo Cliente</button>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 overflow-y-auto" id="customers-grid">
+                    <!-- Injected via JS -->
+                </div>
+            </div>
+
+            <!-- VIEW: REPORTS -->
+            <div id="view-reports" class="app-view hidden absolute inset-0 p-6 overflow-y-auto">
+                <div class="flex flex-wrap gap-4 justify-between items-end mb-6">
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">Filtrar por Fecha</label>
+                        <input type="date" id="report-date" onchange="renderReports()" class="bg-secondary border border-slate-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary text-white">
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <button onclick="exportCSV()" class="bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-lg text-sm font-bold transition flex items-center"><i class="fa-solid fa-file-csv mr-2"></i> Exportar CSV</button>
+                        <button onclick="openAperturaModal()" class="bg-emerald-600 hover:bg-emerald-500 px-4 py-2 rounded-lg text-sm font-bold transition flex items-center shadow-lg"><i class="fa-solid fa-box-open mr-2"></i> Abrir Caja</button>
+                        <button onclick="openArqueoModal()" class="bg-primary hover:bg-primary/80 px-4 py-2 rounded-lg text-sm font-bold transition flex items-center shadow-lg"><i class="fa-solid fa-scale-balanced mr-2"></i> Arqueo y Corte</button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                    <div class="bg-secondary p-4 rounded-xl border border-slate-700 text-center">
+                        <div class="text-slate-400 text-xs mb-1">Ventas Totales</div>
+                        <div class="text-2xl font-bold text-white" id="rep-total-sales">$0.00</div>
+                    </div>
+                    <div class="bg-secondary p-4 rounded-xl border border-slate-700 text-center">
+                        <div class="text-slate-400 text-xs mb-1">Tickets Emitidos</div>
+                        <div class="text-2xl font-bold text-white" id="rep-tickets">0</div>
+                    </div>
+                    <div class="bg-secondary p-4 rounded-xl border border-slate-700 text-center">
+                        <div class="text-slate-400 text-xs mb-1">Cobro en Efectivo</div>
+                        <div class="text-2xl font-bold text-emerald-400" id="rep-cash">$0.00</div>
+                    </div>
+                    <div class="bg-secondary p-4 rounded-xl border border-slate-700 text-center">
+                        <div class="text-slate-400 text-xs mb-1">Cobro Tarjeta/SPEI</div>
+                        <div class="text-2xl font-bold text-indigo-400" id="rep-digital">$0.00</div>
+                    </div>
+                </div>
+
+                <h4 class="font-bold mb-3">Historial de Transacciones</h4>
+                <div class="bg-secondary border border-slate-700 rounded-xl overflow-hidden">
+                    <table class="w-full text-left text-sm whitespace-nowrap">
+                        <thead class="bg-slate-800 text-slate-300">
+                            <tr>
+                                <th class="p-3">Folio / Hora</th>
+                                <th class="p-3">Método</th>
+                                <th class="p-3">Ref/Cliente</th>
+                                <th class="p-3">Total</th>
+                                <th class="p-3">Cajero</th>
+                            </tr>
+                        </thead>
+                        <tbody id="rep-tbody" class="divide-y divide-slate-700/50"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- VIEW: CONFIG -->
+            <div id="view-config" class="app-view hidden absolute inset-0 p-6 overflow-y-auto">
+                <div class="max-w-2xl mx-auto">
+                    <h3 class="text-xl font-bold mb-6">Configuración del Ticket / Tienda</h3>
+                    <div class="bg-secondary border border-slate-700 rounded-xl p-6 space-y-4">
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1">Nombre del Negocio</label>
+                            <input type="text" id="cfg-name" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:border-primary text-white">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1">Sucursal</label>
+                            <input type="text" id="cfg-branch" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:border-primary text-white">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1">Dirección</label>
+                            <input type="text" id="cfg-address" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:border-primary text-white">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1">Teléfono</label>
+                            <input type="text" id="cfg-phone" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:border-primary text-white">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1">Mensaje de Pie de Ticket</label>
+                            <input type="text" id="cfg-msg" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 focus:outline-none focus:border-primary text-white">
+                        </div>
+                        <div class="pt-4 border-t border-slate-700 text-right">
+                            <button onclick="saveConfig()" class="bg-primary hover:bg-primary/80 px-6 py-3 rounded-xl font-bold text-white shadow-lg transition">Guardar Configuración</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW: USERS -->
+            <div id="view-users" class="app-view hidden absolute inset-0 p-6 flex flex-col">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold">Gestión de Usuarios (Cajeros)</h3>
+                    <button onclick="openUserModal()" class="bg-primary hover:bg-primary/80 px-4 py-2 rounded-lg text-sm font-bold transition flex items-center shadow-lg"><i class="fa-solid fa-user-plus mr-2"></i> Nuevo Usuario</button>
+                </div>
+                <div class="flex-1 overflow-auto bg-secondary border border-slate-700 rounded-xl">
+                    <table class="w-full text-left text-sm whitespace-nowrap">
+                        <thead class="bg-slate-800 text-slate-300 sticky top-0">
+                            <tr>
+                                <th class="p-4 font-semibold">Nombre</th>
+                                <th class="p-4 font-semibold">Rol</th>
+                                <th class="p-4 font-semibold">PIN</th>
+                                <th class="p-4 font-semibold text-center">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="users-tbody" class="divide-y divide-slate-700/50"></tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- ==================== MODALS ==================== -->
+
+    <!-- Checkout Modal -->
+    <div id="modal-checkout" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-50 p-4 opacity-0 transition-opacity">
+        <div class="bg-secondary border border-slate-700 rounded-2xl w-full max-w-md p-6 shadow-2xl flex flex-col max-h-[90vh]">
+            <div class="flex justify-between items-center mb-4 shrink-0">
+                <h3 class="font-bold text-lg">Procesar Pago</h3>
+                <button onclick="closeModal('modal-checkout')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            
+            <div class="bg-slate-900 rounded-xl p-4 text-center mb-4 shrink-0 border border-slate-700">
+                <span class="text-sm text-slate-400">Total a Cobrar</span>
+                <div class="text-4xl font-extrabold text-primary" id="chk-total">$0.00</div>
+            </div>
+
+            <div class="overflow-y-auto flex-1 pr-2 space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-2">Método de Pago</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="setPayment('Efectivo')" id="btn-pay-cash" class="pay-btn bg-primary text-white py-2 rounded-lg text-sm border border-primary transition">Efectivo</button>
+                        <button onclick="setPayment('Tarjeta')" id="btn-pay-card" class="pay-btn bg-slate-800 text-slate-300 py-2 rounded-lg text-sm border border-slate-700 transition">Tarjeta / SPEI</button>
+                        <button onclick="setPayment('Credito')" id="btn-pay-cred" class="pay-btn bg-slate-800 text-slate-300 py-2 rounded-lg text-sm border border-slate-700 transition col-span-2">Crédito (Fiado)</button>
+                    </div>
+                </div>
+
+                <!-- Dynamic Input Areas -->
+                <div id="chk-cash-area" class="space-y-2">
+                    <label class="block text-xs font-semibold text-slate-300">Efectivo Recibido</label>
+                    <input type="number" id="chk-received" oninput="calcChange()" placeholder="0.00" class="w-full bg-slate-900 border border-slate-600 rounded-xl px-4 py-3 text-lg font-bold text-center focus:outline-none focus:border-emerald-500">
+                    <div class="flex justify-between items-center bg-slate-800/50 p-3 rounded-lg border border-slate-700">
+                        <span class="text-sm text-slate-400">Cambio:</span>
+                        <span id="chk-change" class="text-xl font-bold text-emerald-400">$0.00</span>
+                    </div>
+                </div>
+
+                <div id="chk-card-area" class="hidden space-y-2">
+                    <label class="block text-xs font-semibold text-slate-300">Folio de Autorización (Obligatorio)</label>
+                    <input type="text" id="chk-folio" placeholder="Ej. 987654" class="w-full bg-slate-900 border border-slate-600 rounded-xl px-4 py-3 text-center focus:outline-none focus:border-indigo-500">
+                </div>
+
+                <div id="chk-cred-area" class="hidden space-y-2">
+                    <label class="block text-xs font-semibold text-slate-300">Seleccionar Cliente</label>
+                    <select id="chk-customer" class="w-full bg-slate-900 border border-slate-600 rounded-xl px-4 py-3 focus:outline-none focus:border-indigo-500">
+                        <!-- Injected -->
+                    </select>
+                </div>
+            </div>
+
+            <div class="mt-4 pt-4 border-t border-slate-700 flex gap-3 shrink-0">
+                <button onclick="processSale()" id="btn-confirm-sale" class="flex-1 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white py-3 rounded-xl font-bold shadow-lg transition text-sm">Completar Venta e Imprimir</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Weight Prompt Modal -->
+    <div id="modal-weight" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+        <div class="bg-secondary border border-slate-700 rounded-2xl w-full max-w-sm p-6 shadow-2xl text-center">
+            <h3 class="font-bold text-lg mb-1">Ingresar Peso</h3>
+            <p id="weight-prod-name" class="text-sm text-slate-400 mb-4">Producto</p>
+            <div class="relative mb-4">
+                <input type="number" id="weight-input" step="0.001" class="w-full bg-slate-900 border border-slate-600 rounded-xl px-4 py-4 text-3xl font-bold text-center focus:outline-none focus:border-primary">
+                <span class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">KG</span>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="closeModal('modal-weight')" class="flex-1 bg-slate-800 py-3 rounded-xl text-sm font-bold text-slate-300">Cancelar</button>
+                <button onclick="confirmWeight()" class="flex-1 bg-primary py-3 rounded-xl text-sm font-bold text-white shadow-lg shadow-primary/20">Agregar al Carrito</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Product Form Modal -->
+    <div id="modal-product" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-50 p-4 opacity-0 transition-opacity">
+        <div class="bg-secondary border border-slate-700 rounded-2xl w-full max-w-md p-6 shadow-2xl">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="font-bold text-lg" id="prod-modal-title">Nuevo Producto</h3>
+                <button onclick="closeModal('modal-product')" class="text-slate-400"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <input type="hidden" id="frm-prod-old-code">
+            <div class="space-y-3 text-sm">
+                <div><label class="text-xs text-slate-400 block mb-1">Código de Barras</label><input type="text" id="frm-prod-code" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2"></div>
+                <div><label class="text-xs text-slate-400 block mb-1">Nombre</label><input type="text" id="frm-prod-name" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2"></div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div><label class="text-xs text-slate-400 block mb-1">Categoría</label>
+                        <select id="frm-prod-cat" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2">
+                            <option>Abarrotes</option><option>Papelería</option><option>Bebidas alcohólicas</option><option>Frutas y verduras</option>
+                        </select>
+                    </div>
+                    <div><label class="text-xs text-slate-400 block mb-1">Precio ($)</label><input type="number" step="0.01" id="frm-prod-price" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2"></div>
+                </div>
+                <div><label class="text-xs text-slate-400 block mb-1">Stock Actual</label><input type="number" step="0.01" id="frm-prod-stock" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2"></div>
+            </div>
+            <div class="mt-5 flex gap-2">
+                <button onclick="closeModal('modal-product')" class="flex-1 bg-slate-800 py-3 rounded-xl font-bold transition">Cancelar</button>
+                <button onclick="saveProduct()" class="flex-1 bg-primary hover:bg-primary/80 py-3 rounded-xl font-bold text-white transition shadow-lg">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Modal -->
+    <div id="modal-user" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-50 p-4 opacity-0 transition-opacity">
+        <div class="bg-secondary border border-slate-700 rounded-2xl w-full max-w-sm p-6 shadow-2xl">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="font-bold text-lg" id="user-modal-title">Nuevo Usuario</h3>
+                <button onclick="closeModal('modal-user')" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <input type="hidden" id="frm-user-old-pin">
+            <div class="space-y-3 text-sm">
+                <div><label class="text-xs text-slate-400 block mb-1">Nombre Completo</label><input type="text" id="frm-user-name" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white"></div>
+                <div><label class="text-xs text-slate-400 block mb-1">Rol</label>
+                    <select id="frm-user-role" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white">
+                        <option value="Cajero">Cajero</option>
+                        <option value="Administrador">Administrador</option>
+                    </select>
+                </div>
+                <div><label class="text-xs text-slate-400 block mb-1">PIN de Acceso (4 dígitos)</label><input type="password" maxlength="4" id="frm-user-pin" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white text-center tracking-widest font-mono focus:outline-none focus:border-primary"></div>
+            </div>
+            <div class="mt-5 flex gap-2">
+                <button onclick="saveUser()" class="flex-1 bg-primary hover:bg-primary/80 py-2.5 rounded-xl font-bold text-white shadow-lg transition">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirm Modal -->
+    <div id="modal-confirm" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-[80] p-4 opacity-0 transition-opacity">
+        <div class="bg-secondary border border-slate-700 rounded-2xl w-full max-w-sm p-6 shadow-2xl text-center">
+            <div class="text-rose-500 text-4xl mb-4"><i class="fa-solid fa-triangle-exclamation"></i></div>
+            <h3 class="font-bold text-lg mb-2" id="confirm-title">Confirmar</h3>
+            <p class="text-sm text-slate-400 mb-6" id="confirm-msg">Mensaje</p>
+            <div class="flex gap-2">
+                <button onclick="cancelConfirm()" class="flex-1 bg-slate-800 hover:bg-slate-700 py-3 rounded-xl font-bold transition">Cancelar</button>
+                <button onclick="executeConfirm()" class="flex-1 bg-rose-600 hover:bg-rose-500 py-3 rounded-xl font-bold text-white transition shadow-lg">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Merma Modal -->
+    <div id="modal-merma" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-[60] p-4 opacity-0 transition-opacity">
+        <div class="bg-secondary border border-slate-700 rounded-2xl w-full max-w-md p-6 shadow-2xl">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="font-bold text-lg">Registrar Merma</h3>
+                <button onclick="closeModal('modal-merma')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <div class="space-y-3 text-sm">
+                <div>
+                    <label class="text-xs text-slate-400 block mb-1">Producto</label>
+                    <select id="frm-merma-prod" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white"></select>
+                </div>
+                <div>
+                    <label class="text-xs text-slate-400 block mb-1">Cantidad a mermar</label>
+                    <input type="number" step="0.01" id="frm-merma-qty" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white">
+                </div>
+                <div>
+                    <label class="text-xs text-slate-400 block mb-1">Motivo / Razón</label>
+                    <input type="text" id="frm-merma-reason" placeholder="Ej. Caducidad, daño..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white">
+                </div>
+            </div>
+            <div class="mt-5">
+                <button onclick="saveMerma()" class="w-full bg-orange-600 hover:bg-orange-500 py-3 rounded-xl font-bold text-white shadow-lg transition">Registrar Merma</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Customer Modal -->
+    <div id="modal-customer" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-[60] p-4 opacity-0 transition-opacity">
+        <div class="bg-secondary border border-slate-700 rounded-2xl w-full max-w-sm p-6 shadow-2xl">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="font-bold text-lg">Nuevo Cliente</h3>
+                <button onclick="closeModal('modal-customer')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <div class="space-y-3 text-sm">
+                <div><label class="text-xs text-slate-400 block mb-1">Nombre Completo</label><input type="text" id="frm-cus-name" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white"></div>
+                <div><label class="text-xs text-slate-400 block mb-1">Teléfono (Opcional)</label><input type="text" id="frm-cus-phone" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white"></div>
+            </div>
+            <div class="mt-5">
+                <button onclick="saveCustomer()" class="w-full bg-emerald-600 hover:bg-emerald-500 py-3 rounded-xl font-bold text-white shadow-lg transition">Guardar Cliente</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Abono Modal -->
+    <div id="modal-abono" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-[60] p-4 opacity-0 transition-opacity">
+        <div class="bg-secondary border border-slate-700 rounded-2xl w-full max-w-sm p-6 shadow-2xl">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="font-bold text-lg">Registrar Abono</h3>
+                <button onclick="closeModal('modal-abono')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <input type="hidden" id="abono-id">
+            <div class="bg-slate-900 p-4 rounded-xl mb-4 text-center border border-slate-700">
+                <div class="text-sm text-slate-400 mb-1" id="abono-name">Cliente</div>
+                <div class="text-3xl font-bold text-rose-400" id="abono-debt">$0.00</div>
+            </div>
+            <div>
+                <label class="text-xs text-slate-400 block mb-1">Monto a abonar (Efectivo)</label>
+                <input type="number" step="0.01" id="abono-amount" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-3 text-lg font-bold text-center text-white focus:outline-none focus:border-primary">
+            </div>
+            <div class="mt-5">
+                <button onclick="processAbono()" class="w-full bg-primary hover:bg-primary/80 py-3 rounded-xl font-bold text-white shadow-lg transition">Procesar Abono</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Apertura Caja Modal -->
+    <div id="modal-apertura" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-[60] p-4 opacity-0 transition-opacity">
+        <div class="bg-secondary border border-slate-700 rounded-2xl w-full max-w-sm p-6 shadow-2xl">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="font-bold text-lg">Apertura de Caja</h3>
+                <button onclick="closeModal('modal-apertura')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <div>
+                <label class="text-xs text-slate-400 block mb-1">Fondo Inicial en Caja</label>
+                <input type="number" step="0.01" id="ape-fondo" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-4 text-2xl font-bold text-center text-white focus:outline-none focus:border-emerald-500">
+            </div>
+            <div class="mt-5">
+                <button onclick="saveApertura()" class="w-full bg-emerald-600 hover:bg-emerald-500 py-3 rounded-xl font-bold text-white shadow-lg transition">Abrir Caja</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Arqueo Caja Modal -->
+    <div id="modal-arqueo" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-[60] p-4 opacity-0 transition-opacity">
+        <div class="bg-secondary border border-slate-700 rounded-2xl w-full max-w-md p-6 shadow-2xl">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="font-bold text-lg">Arqueo Físico de Caja</h3>
+                <button onclick="closeModal('modal-arqueo')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            
+            <div class="space-y-3 mb-6">
+                <div class="flex justify-between items-center bg-slate-900 p-4 rounded-xl border border-slate-700">
+                    <span class="text-sm text-slate-400">Ventas Efectivo del Día:</span>
+                    <span class="font-bold text-emerald-400 text-lg" id="arq-sales" data-val="0">$0.00</span>
+                </div>
+                <div class="flex justify-between items-center bg-slate-900 p-4 rounded-xl border border-slate-700">
+                    <span class="text-sm text-slate-400">Fondo Registrado:</span>
+                    <input type="number" id="arq-fondo" oninput="calcArqueo()" class="bg-slate-800 border border-slate-600 text-white rounded-lg px-3 py-1.5 text-right font-bold w-32 focus:outline-none focus:border-primary">
+                </div>
+                <div class="flex justify-between items-center bg-primary/20 p-4 rounded-xl border border-primary/50">
+                    <span class="text-sm text-primary font-bold">Efectivo Físico Contado:</span>
+                    <input type="number" id="arq-fisico" oninput="calcArqueo()" class="bg-slate-900 border border-primary rounded-lg px-3 py-2 text-right font-extrabold w-32 text-xl text-white focus:outline-none">
+                </div>
+            </div>
+            
+            <div class="text-center p-5 bg-slate-900 border border-slate-700 rounded-xl">
+                <div class="text-sm text-slate-400 mb-1">Diferencia Final:</div>
+                <div id="arq-diff" class="text-3xl font-extrabold text-white">$0.00</div>
+                <div id="arq-msg" class="text-sm mt-2">Ingresa los montos para calcular</div>
+            </div>
+            
+            <div class="mt-6 border-t border-slate-700 pt-4 flex gap-3">
+                <button onclick="realizarCorte()" class="flex-1 bg-rose-600 hover:bg-rose-500 py-3 rounded-xl font-bold text-white shadow-lg transition flex items-center justify-center"><i class="fa-solid fa-receipt mr-2"></i> Realizar Corte y Cerrar Caja</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recepción Rápida (Quick Add) Modal -->
+    <div id="modal-quick-add" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-[60] p-4 opacity-0 transition-opacity">
+        <div class="bg-secondary border border-slate-700 rounded-2xl w-full max-w-sm p-6 shadow-2xl">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="font-bold text-lg">Entrada de Mercancía</h3>
+                <button onclick="closeModal('modal-quick-add')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <div class="bg-slate-900 p-4 rounded-xl mb-4 text-center border border-slate-700">
+                <div class="text-lg font-bold text-primary" id="quick-prod-name">Producto</div>
+            </div>
+            <div>
+                <label class="text-xs text-slate-400 block mb-1">Cantidad a ingresar</label>
+                <input type="number" step="0.01" id="quick-qty" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-4 text-2xl font-bold text-center text-white focus:outline-none focus:border-primary">
+            </div>
+            <div class="mt-5 flex gap-2">
+                <button onclick="closeModal('modal-quick-add')" class="flex-1 bg-slate-800 hover:bg-slate-700 py-3 rounded-xl font-bold transition text-white">Cancelar</button>
+                <button onclick="confirmQuickAdd()" class="flex-1 bg-primary hover:bg-primary/80 py-3 rounded-xl font-bold text-white shadow-lg transition">Sumar Stock</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-6 right-6 bg-slate-800 border border-slate-700 text-white px-5 py-3 rounded-xl shadow-2xl flex items-center space-x-3 translate-y-20 opacity-0 transition-all duration-300 z-[100] pointer-events-none">
+        <div id="toast-icon"></div>
+        <div id="toast-msg" class="text-sm font-medium">Notificación</div>
+    </div>
+
+    <!-- ==================== TICKET PRINT AREA (HIDDEN) ==================== -->
+    <div id="print-section" class="no-print">
+        <!-- Injected before print -->
+    </div>
+
+    <script>
+        /* ================= DATA & STATE ================= */
+        const DB_KEY = 'POS_ULTIMATE_DATA';
+        let db = {
+            products: [], customers: [], mermas: [], sales: [], heldCarts: [], fondos: {}, config: {}, users: [], cortes: [], isCajaAbierta: false
+        };
+        let currentUser = null; // { name, role }
+        let currentCart = [];
+        let payMethod = 'Efectivo';
+        
+        let confirmAction = null;
+        let pendingWeightProd = null;
+
+        // Audio Context Setup
+        let audioCtx;
+        function initAudio() {
+            if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if(audioCtx.state === 'suspended') audioCtx.resume();
+        }
+        function beep(success = true) {
+            try {
+                initAudio();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.type = success ? 'sine' : 'sawtooth';
+                osc.frequency.value = success ? 1000 : 250;
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + (success ? 0.15 : 0.4));
+                osc.start();
+                osc.stop(audioCtx.currentTime + (success ? 0.15 : 0.4));
+            } catch(e) {} // Ignore if browser blocks
+        }
+
+        /* ================= INITIALIZATION ================= */
+        function loadData() {
+            const str = localStorage.getItem(DB_KEY);
+            if(str) {
+                db = JSON.parse(str);
+                if(!db.fondos) db.fondos = {}; // Migración por nueva actualización
+                if(!db.config) db.config = { name: 'MI NEGOCIO SA DE CV', branch: 'Sucursal Centro', address: 'Conocido', phone: 'S/N', msg: '*** GRACIAS POR SU COMPRA ***' };
+                if(!db.users || db.users.length === 0) db.users = [{pin: '1234', name: 'Admin', role: 'Administrador'}, {pin: '0000', name: 'Cajero Principal', role: 'Cajero'}];
+                if(!db.cortes) db.cortes = [];
+                if(db.isCajaAbierta === undefined) db.isCajaAbierta = false;
+            } else {
+                // Seed Initial Data
+                db.products = [
+                    { code: '001', name: 'Coca Cola 600ml', cat: 'Abarrotes', price: 18.00, stock: 50 },
+                    { code: '002', name: 'Libreta Profesional', cat: 'Papelería', price: 45.00, stock: 20 },
+                    { code: '003', name: 'Cerveza Six Pack', cat: 'Bebidas alcohólicas', price: 120.00, stock: 15 },
+                    { code: '004', name: 'Manzana Roja', cat: 'Frutas y verduras', price: 45.00, stock: 10 } // price per kg
+                ];
+                db.config = { name: 'MI NEGOCIO SA DE CV', branch: 'Sucursal Centro', address: 'Conocido', phone: '000-0000', msg: '*** GRACIAS POR SU COMPRA ***' };
+                db.users = [{pin: '1234', name: 'Admin', role: 'Administrador'}, {pin: '0000', name: 'Cajero Principal', role: 'Cajero'}];
+                db.isCajaAbierta = false;
+                saveData();
+            }
+        }
+        function saveData() { localStorage.setItem(DB_KEY, JSON.stringify(db)); }
+        
+        window.onload = () => {
+            loadData();
+            updateClock();
+            setInterval(updateClock, 1000);
+            
+            // Listeners for inputs
+            document.getElementById('pin-input').addEventListener('keydown', (e) => {
+                if(e.key === 'Enter') submitPin();
+                if(e.key === 'Backspace') clearPin();
+                if(/[0-9]/.test(e.key)) appendPin(e.key);
+                e.preventDefault();
+            });
+        };
+
+        /* ================= UI UTILS ================= */
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('current-date-time').innerText = now.toLocaleString('es-MX', { dateStyle: 'long', timeStyle: 'short'});
+        }
+        
+        function showToast(msg, type='success') {
+            const t = document.getElementById('toast');
+            document.getElementById('toast-msg').innerText = msg;
+            const icon = document.getElementById('toast-icon');
+            if(type === 'error') icon.innerHTML = '<i class="fa-solid fa-triangle-exclamation text-rose-400"></i>';
+            else if(type === 'info') icon.innerHTML = '<i class="fa-solid fa-info-circle text-blue-400"></i>';
+            else icon.innerHTML = '<i class="fa-solid fa-circle-check text-emerald-400"></i>';
+            
+            t.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => t.classList.add('translate-y-20', 'opacity-0'), 3000);
+            if(type==='error') beep(false); else beep(true);
+        }
+
+        function openModal(id) {
+            const m = document.getElementById(id);
+            m.classList.remove('hidden');
+            m.classList.add('flex');
+            setTimeout(() => m.classList.remove('opacity-0'), 10);
+        }
+        function closeModal(id) {
+            const m = document.getElementById(id);
+            m.classList.add('opacity-0');
+            setTimeout(() => { m.classList.remove('flex'); m.classList.add('hidden'); }, 200);
+        }
+
+        function askConfirm(title, msg, onConfirm) {
+            document.getElementById('confirm-title').innerText = title;
+            document.getElementById('confirm-msg').innerText = msg;
+            confirmAction = onConfirm;
+            openModal('modal-confirm');
+        }
+        function cancelConfirm() { closeModal('modal-confirm'); confirmAction = null; }
+        function executeConfirm() {
+            if(confirmAction) confirmAction();
+            closeModal('modal-confirm');
+        }
+
+        function toggleMobileCart() {
+            const c = document.getElementById('mobile-cart');
+            const i = document.getElementById('mobile-cart-icon');
+            if(c.classList.contains('translate-y-[calc(100%-4rem)]')) {
+                c.classList.remove('translate-y-[calc(100%-4rem)]');
+                i.classList.add('rotate-180');
+            } else {
+                c.classList.add('translate-y-[calc(100%-4rem)]');
+                i.classList.remove('rotate-180');
+            }
+        }
+
+        function checkCajaState() {
+            const overlay = document.getElementById('caja-cerrada-overlay');
+            if(overlay) {
+                if(db.isCajaAbierta) {
+                    overlay.classList.add('hidden');
+                    overlay.classList.remove('flex');
+                } else {
+                    overlay.classList.remove('hidden');
+                    overlay.classList.add('flex');
+                }
+            }
+        }
+
+        /* ================= AUTHENTICATION ================= */
+        let pinBuffer = '';
+        function appendPin(num) { 
+            initAudio();
+            if(pinBuffer.length < 4) { pinBuffer += num; document.getElementById('pin-input').value = '*'.repeat(pinBuffer.length); }
+        }
+        function clearPin() { pinBuffer = ''; document.getElementById('pin-input').value = ''; }
+        function submitPin() {
+            const user = db.users.find(u => u.pin === pinBuffer);
+            if(user) {
+                currentUser = user;
+            } else { 
+                showToast('PIN Incorrecto', 'error'); 
+                clearPin(); 
+                return; 
+            }
+            
+            // Login Success
+            document.getElementById('user-name').innerText = currentUser.name;
+            document.getElementById('user-role').innerText = currentUser.role;
+            document.getElementById('user-avatar').innerText = currentUser.name.charAt(0);
+            
+            // Apply Permissions
+            const adminEls = document.querySelectorAll('.admin-only');
+            adminEls.forEach(el => currentUser.role === 'Administrador' ? el.classList.remove('hidden') : el.classList.add('hidden'));
+
+            // Transition UI
+            document.getElementById('login-overlay').classList.add('opacity-0', 'pointer-events-none');
+            setTimeout(() => {
+                document.getElementById('login-overlay').classList.add('hidden');
+                document.getElementById('sidebar').classList.remove('hidden');
+                document.getElementById('app-container').classList.remove('hidden');
+                navTo('pos');
+            }, 500);
+            beep();
+        }
+        function logout() {
+            currentUser = null;
+            clearPin();
+            document.getElementById('login-overlay').classList.remove('hidden');
+            setTimeout(() => document.getElementById('login-overlay').classList.remove('opacity-0', 'pointer-events-none'), 10);
+            document.getElementById('sidebar').classList.add('hidden');
+            document.getElementById('app-container').classList.add('hidden');
+        }
+
+        /* ================= NAVIGATION ================= */
+        function navTo(view) {
+            document.querySelectorAll('.app-view').forEach(v => v.classList.add('hidden'));
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active-nav'));
+            
+            document.getElementById(`view-${view}`).classList.remove('hidden');
+            document.getElementById(`nav-${view}`).classList.add('active-nav');
+            
+            const titles = { pos: 'Punto de Venta', held: 'Cuentas en Espera', inventory: 'Inventario', reception: 'Recepción', mermas: 'Mermas', customers: 'Clientes', reports: 'Reportes y Cortes', config: 'Configuración', users: 'Usuarios' };
+            document.getElementById('header-title').innerText = titles[view] || 'POS';
+
+            // Init views
+            if(view === 'pos') {
+                renderPOSProducts();
+                checkCajaState();
+            }
+            if(view === 'inventory') renderInventory();
+            if(view === 'mermas') renderMermas();
+            if(view === 'customers') renderCustomers();
+            if(view === 'config') renderConfig();
+            if(view === 'users') renderUsers();
+            if(view === 'reports') {
+                const today = new Date();
+                document.getElementById('report-date').value = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+                renderReports();
+            }
+            if(view === 'held') renderHeldCarts();
+            if(view === 'reception') {
+                setTimeout(() => document.getElementById('rec-barcode').focus(), 100);
+            }
+        }
+
+        /* ================= POS LOGIC ================= */
+        function renderPOSProducts() {
+            const q = document.getElementById('pos-search').value.toLowerCase();
+            const cat = document.getElementById('pos-category').value;
+            const grid = document.getElementById('pos-grid');
+            
+            let html = '';
+            db.products.forEach(p => {
+                if((cat === 'all' || p.cat === cat) && (p.name.toLowerCase().includes(q) || p.code.toLowerCase().includes(q))) {
+                    const color = p.stock <= 0 ? 'border-rose-500/50 opacity-60' : 'border-slate-700 hover:border-primary cursor-pointer';
+                    html += `
+                        <div ${p.stock > 0 ? `onclick="handleAddClick('${p.code}')"` : ''} class="bg-slate-900 border ${color} rounded-xl p-3 flex flex-col justify-between transition group relative overflow-hidden">
+                            ${p.stock <= 0 ? '<div class="absolute top-2 right-2 bg-rose-500 text-white text-[10px] px-1.5 py-0.5 rounded font-bold">Agotado</div>' : ''}
+                            <div>
+                                <div class="text-[9px] font-bold text-primary mb-1 uppercase">${p.cat}</div>
+                                <h4 class="font-bold text-sm text-white leading-tight line-clamp-2">${p.name}</h4>
+                            </div>
+                            <div class="mt-3 flex justify-between items-end">
+                                <div>
+                                    <div class="text-xs text-slate-400">Stock: ${p.stock}</div>
+                                    <div class="font-extrabold text-primary text-lg">$${p.price.toFixed(2)}</div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+            grid.innerHTML = html || '<div class="col-span-full text-center text-slate-500 py-10">No hay resultados</div>';
+        }
+
+        function handlePOSSearch(e) {
+            if(e.key === 'Enter') {
+                const q = e.target.value.trim();
+                if(q) {
+                    handleAddClick(q, true);
+                    e.target.value = '';
+                    renderPOSProducts();
+                }
+            } else {
+                renderPOSProducts();
+            }
+        }
+
+        function handleAddClick(codeOrName, fromScanner = false) {
+            const p = db.products.find(x => x.code.toLowerCase() === codeOrName.toLowerCase() || (fromScanner && x.name.toLowerCase() === codeOrName.toLowerCase()));
+            
+            if(!p) { showToast('Producto no encontrado', 'error'); return; }
+            if(p.stock <= 0) { showToast('Producto agotado', 'error'); return; }
+
+            if(p.cat === 'Frutas y verduras') {
+                pendingWeightProd = p;
+                document.getElementById('weight-prod-name').innerText = p.name + ` ($${p.price}/kg)`;
+                document.getElementById('weight-input').value = '';
+                openModal('modal-weight');
+                setTimeout(() => document.getElementById('weight-input').focus(), 100);
+            } else {
+                addToCart(p, 1);
+            }
+        }
+
+        function confirmWeight() {
+            const w = parseFloat(document.getElementById('weight-input').value);
+            if(isNaN(w) || w <= 0) { showToast('Peso inválido', 'error'); return; }
+            if(w > pendingWeightProd.stock) { showToast('Stock insuficiente', 'error'); return; }
+            
+            addToCart(pendingWeightProd, w);
+            closeModal('modal-weight');
+            pendingWeightProd = null;
+        }
+
+        function addToCart(prod, qty) {
+            const exist = currentCart.find(x => x.code === prod.code);
+            if(exist) {
+                if(exist.qty + qty > prod.stock) { showToast('Límite de stock', 'error'); return; }
+                exist.qty += qty;
+            } else {
+                currentCart.push({ ...prod, qty });
+            }
+            beep();
+            updateCartUI();
+        }
+
+        function changeQty(code, delta) {
+            const item = currentCart.find(x => x.code === code);
+            if(!item) return;
+            const prod = db.products.find(x => x.code === code);
+            
+            if(prod.cat === 'Frutas y verduras') {
+                 // For weight items, just remove or ask again. Let's just allow removing via negative delta that kills it, or full delete.
+                 if(delta < 0) { currentCart = currentCart.filter(x => x.code !== code); }
+            } else {
+                item.qty += delta;
+                if(item.qty <= 0) currentCart = currentCart.filter(x => x.code !== code);
+                else if(item.qty > prod.stock) { item.qty = prod.stock; showToast('Sin más stock', 'error'); }
+            }
+            updateCartUI();
+        }
+
+        function clearCart() { currentCart = []; updateCartUI(); }
+
+        function updateCartUI() {
+            const container = document.getElementById('cart-items');
+            document.getElementById('mobile-cart-badge').innerText = currentCart.length;
+            
+            if(currentCart.length === 0) {
+                container.innerHTML = '<div class="text-center text-slate-500 py-10 text-sm">Carrito vacío</div>';
+                document.getElementById('btn-checkout').disabled = true;
+                document.getElementById('cart-subtotal').innerText = '$0.00';
+                document.getElementById('cart-tax').innerText = '$0.00';
+                document.getElementById('cart-total').innerText = '$0.00';
+                return;
+            }
+            document.getElementById('btn-checkout').disabled = false;
+            
+            let total = 0;
+            container.innerHTML = currentCart.map(i => {
+                const isWeight = i.cat === 'Frutas y verduras';
+                const sub = i.qty * i.price;
+                total += sub;
+                return `
+                <div class="bg-slate-900 rounded-lg p-2 border border-slate-700 flex justify-between items-center text-sm">
+                    <div class="flex-1 pr-2">
+                        <div class="font-bold text-white line-clamp-1">${i.name}</div>
+                        <div class="text-xs text-primary">$${i.price.toFixed(2)} ${isWeight?'/kg':'c/u'}</div>
+                    </div>
+                    <div class="flex items-center space-x-2 shrink-0">
+                        ${isWeight ? `
+                            <span class="font-bold text-white">${i.qty.toFixed(3)} kg</span>
+                            <button onclick="changeQty('${i.code}', -1)" class="text-rose-400 p-1"><i class="fa-solid fa-trash"></i></button>
+                        ` : `
+                            <button onclick="changeQty('${i.code}', -1)" class="w-6 h-6 bg-slate-800 rounded flex items-center justify-center text-slate-300 hover:text-white"><i class="fa-solid fa-minus text-[10px]"></i></button>
+                            <span class="font-bold w-4 text-center">${i.qty}</span>
+                            <button onclick="changeQty('${i.code}', 1)" class="w-6 h-6 bg-slate-800 rounded flex items-center justify-center text-slate-300 hover:text-white"><i class="fa-solid fa-plus text-[10px]"></i></button>
+                        `}
+                    </div>
+                </div>
+                `;
+            }).join('');
+
+            const tax = total * 0.16;
+            const sub = total - tax;
+            document.getElementById('cart-subtotal').innerText = `$${sub.toFixed(2)}`;
+            document.getElementById('cart-tax').innerText = `$${tax.toFixed(2)}`;
+            document.getElementById('cart-total').innerText = `$${total.toFixed(2)}`;
+        }
+
+        /* ================= HELD CARTS (CUENTAS EN ESPERA) ================= */
+        function holdCart() {
+            if(currentCart.length === 0) return;
+            const total = currentCart.reduce((acc, i) => acc + (i.price * i.qty), 0);
+            db.heldCarts.push({ id: Date.now(), date: new Date().toLocaleString(), items: [...currentCart], total });
+            saveData();
+            clearCart();
+            updateHeldBadge();
+            showToast('Cuenta guardada en espera', 'info');
+        }
+        function updateHeldBadge() {
+            const b = document.getElementById('badge-held');
+            b.innerText = db.heldCarts.length;
+            b.style.display = db.heldCarts.length > 0 ? 'inline-block' : 'none';
+        }
+        function renderHeldCarts() {
+            updateHeldBadge();
+            const list = document.getElementById('held-carts-list');
+            if(db.heldCarts.length === 0) { list.innerHTML = '<div class="col-span-full text-slate-500">No hay cuentas en espera.</div>'; return; }
+            
+            list.innerHTML = db.heldCarts.map(h => `
+                <div class="bg-secondary border border-slate-700 rounded-xl p-4 flex flex-col justify-between">
+                    <div>
+                        <div class="text-xs text-slate-400 mb-1">${h.date}</div>
+                        <div class="font-bold mb-2">${h.items.length} artículos</div>
+                        <ul class="text-xs text-slate-300 mb-3 list-disc pl-4 opacity-70">
+                            ${h.items.slice(0,3).map(i => `<li>${i.qty}x ${i.name}</li>`).join('')}
+                            ${h.items.length > 3 ? '<li>...</li>' : ''}
+                        </ul>
+                    </div>
+                    <div class="flex justify-between items-center mt-2 border-t border-slate-700 pt-3">
+                        <span class="font-extrabold text-primary text-lg">$${h.total.toFixed(2)}</span>
+                        <div class="flex gap-2">
+                            <button onclick="delHeld(${h.id})" class="bg-rose-500/10 text-rose-400 px-3 py-1.5 rounded-lg text-xs hover:bg-rose-500/20"><i class="fa-solid fa-trash"></i></button>
+                            <button onclick="restoreHeld(${h.id})" class="bg-primary text-white px-3 py-1.5 rounded-lg text-xs shadow-lg hover:bg-primary/80">Recuperar</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+        function delHeld(id) {
+            askConfirm('Eliminar Cuenta', '¿Seguro que deseas eliminar esta cuenta en espera?', () => {
+                db.heldCarts = db.heldCarts.filter(h => h.id !== id);
+                saveData();
+                renderHeldCarts();
+                showToast('Cuenta eliminada');
+            });
+        }
+        function restoreHeld(id) {
+            if(currentCart.length > 0) { showToast('El carrito actual debe estar vacío', 'error'); return; }
+            const h = db.heldCarts.find(x => x.id === id);
+            currentCart = [...h.items];
+            db.heldCarts = db.heldCarts.filter(x => x.id !== id);
+            saveData();
+            updateCartUI();
+            navTo('pos');
+            showToast('Cuenta restaurada');
+        }
+
+        /* ================= CHECKOUT ================= */
+        function openCheckout() {
+            const total = currentCart.reduce((acc, i) => acc + (i.price * i.qty), 0);
+            document.getElementById('chk-total').innerText = `$${total.toFixed(2)}`;
+            setPayment('Efectivo');
+            
+            // Populate customers
+            const sel = document.getElementById('chk-customer');
+            sel.innerHTML = db.customers.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+            if(db.customers.length === 0) sel.innerHTML = '<option value="">Registra clientes primero</option>';
+            
+            document.getElementById('chk-received').value = '';
+            document.getElementById('chk-change').innerText = '$0.00';
+            document.getElementById('chk-folio').value = '';
+            
+            openModal('modal-checkout');
+            validateCheckout();
+            setTimeout(() => document.getElementById('chk-received').focus(), 100);
+        }
+
+        function setPayment(method) {
+            payMethod = method;
+            document.querySelectorAll('.pay-btn').forEach(b => { b.classList.remove('bg-primary','text-white','border-primary'); b.classList.add('bg-slate-800','text-slate-300','border-slate-700'); });
+            
+            let activeId = method==='Efectivo'?'btn-pay-cash':(method==='Tarjeta'?'btn-pay-card':'btn-pay-cred');
+            const act = document.getElementById(activeId);
+            act.classList.remove('bg-slate-800','text-slate-300','border-slate-700'); act.classList.add('bg-primary','text-white','border-primary');
+
+            document.getElementById('chk-cash-area').classList.toggle('hidden', method !== 'Efectivo');
+            document.getElementById('chk-card-area').classList.toggle('hidden', method !== 'Tarjeta');
+            document.getElementById('chk-cred-area').classList.toggle('hidden', method !== 'Credito');
+            
+            validateCheckout();
+        }
+
+        function calcChange() {
+            const total = currentCart.reduce((acc, i) => acc + (i.price * i.qty), 0);
+            const rec = parseFloat(document.getElementById('chk-received').value) || 0;
+            const diff = rec - total;
+            document.getElementById('chk-change').innerText = diff >= 0 ? `$${diff.toFixed(2)}` : '$0.00';
+            validateCheckout();
+        }
+
+        function validateCheckout() {
+            const btn = document.getElementById('btn-confirm-sale');
+            const total = currentCart.reduce((acc, i) => acc + (i.price * i.qty), 0);
+            
+            if(payMethod === 'Efectivo') {
+                const rec = parseFloat(document.getElementById('chk-received').value) || 0;
+                btn.disabled = rec < total;
+            } else if(payMethod === 'Credito') {
+                btn.disabled = db.customers.length === 0;
+            } else {
+                btn.disabled = false; // Trust cajero para tarjeta
+            }
+        }
+
+        function processSale() {
+            const total = currentCart.reduce((acc, i) => acc + (i.price * i.qty), 0);
+            const ref = payMethod === 'Tarjeta' ? document.getElementById('chk-folio').value || 'S/F' : '';
+            let custId = null;
+
+            if(payMethod === 'Credito') {
+                custId = document.getElementById('chk-customer').value;
+                const cust = db.customers.find(c => c.id == custId);
+                cust.debt += total;
+            }
+
+            // Descontar inventario
+            currentCart.forEach(ci => {
+                const p = db.products.find(x => x.code === ci.code);
+                if(p) p.stock -= ci.qty;
+            });
+
+            const sale = {
+                id: Date.now(),
+                date: new Date().toISOString(),
+                method: payMethod,
+                ref: ref,
+                customer: custId,
+                total: total,
+                items: [...currentCart],
+                user: currentUser.name
+            };
+            db.sales.push(sale);
+            saveData();
+            
+            closeModal('modal-checkout');
+            printTicket(sale);
+            
+            clearCart();
+            renderPOSProducts();
+            showToast('Venta Procesada Exitosamente');
+        }
+
+        /* ================= TICKET PRINTING & CONFIG ================= */
+        function renderConfig() {
+            document.getElementById('cfg-name').value = db.config.name || '';
+            document.getElementById('cfg-branch').value = db.config.branch || '';
+            document.getElementById('cfg-address').value = db.config.address || '';
+            document.getElementById('cfg-phone').value = db.config.phone || '';
+            document.getElementById('cfg-msg').value = db.config.msg || '';
+        }
+
+        function saveConfig() {
+            db.config.name = document.getElementById('cfg-name').value.trim();
+            db.config.branch = document.getElementById('cfg-branch').value.trim();
+            db.config.address = document.getElementById('cfg-address').value.trim();
+            db.config.phone = document.getElementById('cfg-phone').value.trim();
+            db.config.msg = document.getElementById('cfg-msg').value.trim();
+            saveData();
+            showToast('Configuración Guardada');
+        }
+
+        function printTicket(sale) {
+            const ps = document.getElementById('print-section');
+            const d = new Date(sale.date);
+            const cfg = db.config;
+            
+            let html = `
+                <div style="text-align:center; margin-bottom:10px;">
+                    <strong>${cfg.name}</strong><br>
+                    ${cfg.branch}<br>
+                    ${cfg.address}<br>
+                    Tel: ${cfg.phone}<br>
+                    --------------------------------<br>
+                    Fecha: ${d.toLocaleDateString()} ${d.toLocaleTimeString()}<br>
+                    Folio: #${sale.id.toString().slice(-6)}<br>
+                    Cajero: ${sale.user}
+                </div>
+                <hr style="border-top:1px dashed black;">
+                <table style="width:100%; margin:10px 0; font-size:11px;">
+            `;
+            sale.items.forEach(i => {
+                html += `<tr>
+                    <td colspan="2">${i.name}</td>
+                </tr>
+                <tr>
+                    <td>${i.qty} x $${i.price.toFixed(2)}</td>
+                    <td style="text-align:right;">$${(i.qty*i.price).toFixed(2)}</td>
+                </tr>`;
+            });
+            html += `
+                </table>
+                <hr style="border-top:1px dashed black;">
+                <div style="text-align:right; margin:10px 0; font-size:14px;">
+                    <strong>TOTAL: $${sale.total.toFixed(2)}</strong>
+                </div>
+                <div style="text-align:center; font-size:11px; margin-top:10px;">
+                    Pago: ${sale.method} ${sale.ref ? '('+sale.ref+')' : ''}<br>
+                    <br>
+                    ${cfg.msg}
+                </div>
+            `;
+            ps.innerHTML = html;
+            window.print();
+        }
+
+        /* ================= INVENTORY & RECEPTION ================= */
+        function renderInventory() {
+            const q = document.getElementById('inv-search').value.toLowerCase();
+            const tb = document.getElementById('inv-tbody');
+            
+            const list = db.products.filter(p => p.name.toLowerCase().includes(q) || p.code.toLowerCase().includes(q));
+            if(list.length===0) { tb.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-500">Sin productos</td></tr>`; return; }
+            
+            tb.innerHTML = list.map(p => `
+                <tr class="hover:bg-slate-800/50 transition">
+                    <td class="p-4 text-slate-400">${p.code}</td>
+                    <td class="p-4 font-bold text-white">${p.name}</td>
+                    <td class="p-4"><span class="bg-slate-800 px-2 py-1 rounded text-xs">${p.cat}</span></td>
+                    <td class="p-4 font-bold text-emerald-400">$${p.price.toFixed(2)}</td>
+                    <td class="p-4 font-bold ${p.stock<=5?'text-rose-400':'text-white'}">${p.cat==='Frutas y verduras'?p.stock.toFixed(2)+' kg':p.stock}</td>
+                    <td class="p-4 text-center">
+                        <button onclick="editProduct('${p.code}')" class="text-indigo-400 hover:text-indigo-300 p-1 mx-1"><i class="fa-solid fa-pen"></i></button>
+                        <button onclick="delProduct('${p.code}')" class="text-rose-400 hover:text-rose-300 p-1 mx-1"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function openProductModal() {
+            document.getElementById('prod-modal-title').innerText = 'Nuevo Producto';
+            document.getElementById('frm-prod-old-code').value = '';
+            document.getElementById('frm-prod-code').value = '';
+            document.getElementById('frm-prod-name').value = '';
+            document.getElementById('frm-prod-price').value = '';
+            document.getElementById('frm-prod-stock').value = '';
+            openModal('modal-product');
+        }
+
+        function editProduct(code) {
+            const p = db.products.find(x => x.code === code);
+            document.getElementById('prod-modal-title').innerText = 'Editar Producto';
+            document.getElementById('frm-prod-old-code').value = p.code;
+            document.getElementById('frm-prod-code').value = p.code;
+            document.getElementById('frm-prod-name').value = p.name;
+            document.getElementById('frm-prod-cat').value = p.cat;
+            document.getElementById('frm-prod-price').value = p.price;
+            document.getElementById('frm-prod-stock').value = p.stock;
+            openModal('modal-product');
+        }
+
+        function saveProduct() {
+            const oldCode = document.getElementById('frm-prod-old-code').value;
+            const code = document.getElementById('frm-prod-code').value.trim();
+            const name = document.getElementById('frm-prod-name').value.trim();
+            const cat = document.getElementById('frm-prod-cat').value;
+            const price = parseFloat(document.getElementById('frm-prod-price').value);
+            const stock = parseFloat(document.getElementById('frm-prod-stock').value);
+
+            if(!code || !name || isNaN(price) || isNaN(stock)) { showToast('Datos inválidos', 'error'); return; }
+
+            if(oldCode && oldCode !== code && db.products.find(x => x.code === code)) {
+                showToast('El código ya existe', 'error'); return;
+            }
+            if(!oldCode && db.products.find(x => x.code === code)) {
+                showToast('El código ya existe', 'error'); return;
+            }
+
+            if(oldCode) {
+                const idx = db.products.findIndex(x => x.code === oldCode);
+                db.products[idx] = { code, name, cat, price, stock };
+            } else {
+                db.products.push({ code, name, cat, price, stock });
+            }
+            saveData();
+            closeModal('modal-product');
+            renderInventory();
+            renderPOSProducts();
+            showToast('Producto guardado');
+        }
+
+        function delProduct(code) {
+            askConfirm('Eliminar Producto', `¿Eliminar código ${code}? Esta acción no se deshace.`, () => {
+                db.products = db.products.filter(x => x.code !== code);
+                saveData();
+                renderInventory();
+                renderPOSProducts();
+                showToast('Eliminado exitosamente');
+            });
+        }
+
+        // Reception Logic
+        let quickCode = '';
+        function handleReception(e) {
+            if(e.key === 'Enter') {
+                const q = e.target.value.trim();
+                e.target.value = '';
+                if(!q) return;
+                const p = db.products.find(x => x.code === q);
+                if(p) {
+                    quickCode = q;
+                    document.getElementById('quick-prod-name').innerText = p.name;
+                    document.getElementById('quick-qty').value = '';
+                    openModal('modal-quick-add');
+                    setTimeout(()=>document.getElementById('quick-qty').focus(), 100);
+                } else {
+                    showToast('Código nuevo. Registre el producto.', 'info');
+                    openProductModal();
+                    document.getElementById('frm-prod-code').value = q;
+                }
+            }
+        }
+        function confirmQuickAdd() {
+            const qty = parseFloat(document.getElementById('quick-qty').value);
+            if(isNaN(qty) || qty <= 0) return;
+            const p = db.products.find(x => x.code === quickCode);
+            p.stock += qty;
+            saveData();
+            closeModal('modal-quick-add');
+            showToast('Stock actualizado (+'+qty+')');
+            quickCode = '';
+        }
+
+        /* ================= MERMAS ================= */
+        function renderMermas() {
+            const tb = document.getElementById('mermas-tbody');
+            if(db.mermas.length === 0) { tb.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-500">Sin registros de mermas</td></tr>`; return; }
+            
+            tb.innerHTML = db.mermas.slice().reverse().map(m => `
+                <tr class="hover:bg-slate-800/50 transition">
+                    <td class="p-4 text-slate-400 text-xs">${new Date(m.date).toLocaleString()}</td>
+                    <td class="p-4 font-bold text-white">${m.prodName}</td>
+                    <td class="p-4 font-bold text-rose-400">-${m.qty}</td>
+                    <td class="p-4 text-slate-300">${m.reason}</td>
+                    <td class="p-4 text-slate-400">${m.user}</td>
+                </tr>
+            `).join('');
+        }
+        function openMermaModal() {
+            const sel = document.getElementById('frm-merma-prod');
+            sel.innerHTML = db.products.map(p => `<option value="${p.code}">${p.name} (Stock: ${p.stock})</option>`).join('');
+            document.getElementById('frm-merma-qty').value = '';
+            openModal('modal-merma');
+        }
+        function saveMerma() {
+            const code = document.getElementById('frm-merma-prod').value;
+            const qty = parseFloat(document.getElementById('frm-merma-qty').value);
+            const reason = document.getElementById('frm-merma-reason').value;
+            
+            if(isNaN(qty) || qty<=0) { showToast('Cantidad inválida', 'error'); return; }
+            const p = db.products.find(x => x.code === code);
+            if(qty > p.stock) { showToast('Excede stock actual', 'error'); return; }
+            
+            p.stock -= qty;
+            db.mermas.push({
+                id: Date.now(), date: new Date().toISOString(),
+                prodId: code, prodName: p.name, qty, reason, user: currentUser.name
+            });
+            saveData();
+            closeModal('modal-merma');
+            renderMermas();
+            showToast('Merma registrada');
+        }
+
+        /* ================= CUSTOMERS & CREDIT ================= */
+        function renderCustomers() {
+            const grid = document.getElementById('customers-grid');
+            if(db.customers.length === 0) { grid.innerHTML = '<div class="col-span-full text-slate-500">No hay clientes.</div>'; return; }
+            
+            grid.innerHTML = db.customers.map(c => `
+                <div class="bg-secondary border border-slate-700 rounded-xl p-4 flex flex-col justify-between group relative overflow-hidden">
+                    <button onclick="delCustomer(${c.id})" class="absolute top-2 right-2 text-rose-500/50 hover:text-rose-400 opacity-0 group-hover:opacity-100 transition"><i class="fa-solid fa-trash"></i></button>
+                    <div>
+                        <h4 class="font-bold text-white text-lg">${c.name}</h4>
+                        <div class="text-xs text-slate-400 mb-4"><i class="fa-solid fa-phone mr-1"></i> ${c.phone || 'N/A'}</div>
+                    </div>
+                    <div class="flex justify-between items-end border-t border-slate-700 pt-3">
+                        <div>
+                            <div class="text-xs text-slate-400">Deuda actual:</div>
+                            <div class="font-bold text-rose-400 text-xl">$${c.debt.toFixed(2)}</div>
+                        </div>
+                        <button onclick="openAbono(${c.id})" class="bg-primary/20 text-primary hover:bg-primary hover:text-white px-3 py-1.5 rounded-lg text-sm transition">Abonar</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        function openCustomerModal() {
+            document.getElementById('frm-cus-name').value = '';
+            document.getElementById('frm-cus-phone').value = '';
+            openModal('modal-customer');
+        }
+        function saveCustomer() {
+            const name = document.getElementById('frm-cus-name').value.trim();
+            const phone = document.getElementById('frm-cus-phone').value.trim();
+            if(!name) { showToast('El nombre es obligatorio', 'error'); return; }
+            db.customers.push({ id: Date.now(), name, phone, debt: 0 });
+            saveData();
+            closeModal('modal-customer');
+            renderCustomers();
+            showToast('Cliente guardado');
+        }
+        function delCustomer(id) {
+            const c = db.customers.find(x => x.id === id);
+            if(c.debt > 0) { showToast('No se puede eliminar con deuda activa', 'error'); return; }
+            askConfirm('Eliminar Cliente', `¿Seguro que deseas eliminar a ${c.name}?`, () => {
+                db.customers = db.customers.filter(x => x.id !== id);
+                saveData();
+                renderCustomers();
+                showToast('Cliente eliminado');
+            });
+        }
+        
+        function openAbono(id) {
+            const c = db.customers.find(x => x.id === id);
+            if(c.debt <= 0) { showToast('Este cliente no tiene deudas', 'info'); return; }
+            document.getElementById('abono-id').value = c.id;
+            document.getElementById('abono-name').innerText = c.name;
+            document.getElementById('abono-debt').innerText = `$${c.debt.toFixed(2)}`;
+            document.getElementById('abono-amount').value = '';
+            openModal('modal-abono');
+        }
+        function processAbono() {
+            const id = document.getElementById('abono-id').value;
+            const amt = parseFloat(document.getElementById('abono-amount').value);
+            if(isNaN(amt) || amt <= 0) return;
+            
+            const c = db.customers.find(x => x.id == id);
+            if(amt > c.debt) { showToast('El abono supera la deuda', 'error'); return; }
+            
+            c.debt -= amt;
+            // Registrar el abono como un ingreso positivo (tipo venta fantasma) para el reporte
+            db.sales.push({
+                id: Date.now(), date: new Date().toISOString(),
+                method: 'Efectivo', ref: `Abono de ${c.name}`, total: amt, items: [], user: currentUser.name
+            });
+            saveData();
+            closeModal('modal-abono');
+            renderCustomers();
+            showToast('Abono registrado');
+        }
+
+        /* ================= REPORTS & EXPORT ================= */
+        function renderReports() {
+            const dateStr = document.getElementById('report-date').value;
+            if(!dateStr) return;
+            
+            // Reparación de zona horaria: Construir fecha local correctamente
+            const [y, m, d] = dateStr.split('-');
+            const targetDate = new Date(y, m-1, d).toLocaleDateString();
+            
+            const daySales = db.sales.filter(s => new Date(s.date).toLocaleDateString() === targetDate);
+            
+            let tTotal = 0, tCash = 0, tDig = 0;
+            daySales.forEach(s => {
+                tTotal += s.total;
+                if(s.method === 'Efectivo') tCash += s.total;
+                if(s.method === 'Tarjeta') tDig += s.total;
+                // Credit sales dont add to drawer cash immediately
+            });
+            
+            document.getElementById('rep-total-sales').innerText = `$${tTotal.toFixed(2)}`;
+            document.getElementById('rep-tickets').innerText = daySales.length;
+            document.getElementById('rep-cash').innerText = `$${tCash.toFixed(2)}`;
+            document.getElementById('rep-digital').innerText = `$${tDig.toFixed(2)}`;
+            
+            // For Arqueo
+            document.getElementById('arq-sales').innerText = `$${tCash.toFixed(2)}`;
+            document.getElementById('arq-sales').dataset.val = tCash;
+            
+            const tb = document.getElementById('rep-tbody');
+            if(daySales.length===0) { tb.innerHTML=`<tr><td colspan="5" class="p-3 text-center text-slate-500">Sin transacciones</td></tr>`; return;}
+            
+            tb.innerHTML = daySales.slice().reverse().map(s => {
+                let badge = s.method==='Efectivo'?'bg-emerald-500/20 text-emerald-400':(s.method==='Tarjeta'?'bg-indigo-500/20 text-indigo-400':'bg-orange-500/20 text-orange-400');
+                return `
+                <tr class="hover:bg-slate-800/30">
+                    <td class="p-3 font-mono text-xs">#${s.id.toString().slice(-6)}<br><span class="text-[10px] text-slate-500">${new Date(s.date).toLocaleTimeString()}</span></td>
+                    <td class="p-3"><span class="px-2 py-1 rounded text-[10px] font-bold ${badge}">${s.method}</span></td>
+                    <td class="p-3 text-xs text-slate-300 max-w-[150px] truncate">${s.ref || (s.customer ? 'A Crédito' : '-')}</td>
+                    <td class="p-3 font-bold text-white">$${s.total.toFixed(2)}</td>
+                    <td class="p-3 text-xs text-slate-400">${s.user}</td>
+                </tr>`;
+            }).join('');
+        }
+
+        function exportCSV() {
+            const dateStr = document.getElementById('report-date').value;
+            const [y, m, d] = dateStr.split('-');
+            const targetDate = new Date(y, m-1, d).toLocaleDateString();
+            const daySales = db.sales.filter(s => new Date(s.date).toLocaleDateString() === targetDate);
+            
+            if(daySales.length === 0) { showToast('No hay datos para exportar', 'error'); return; }
+            
+            let csv = "Folio,Fecha,Hora,Metodo,Referencia,Total,Cajero\n";
+            daySales.forEach(s => {
+                const d = new Date(s.date);
+                const ref = s.ref ? s.ref.replace(/,/g, '') : '';
+                csv += `${s.id},${d.toLocaleDateString()},${d.toLocaleTimeString()},${s.method},${ref},${s.total},${s.user}\n`;
+            });
+            
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", `Corte_${dateStr}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showToast('Archivo CSV Exportado');
+        }
+
+        // Obtener fecha actual en formato YYYY-MM-DD
+        function getLocalISO(d) {
+            return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        }
+
+        // Lógica de Apertura y Arqueo
+        function openAperturaModal() {
+            const dateStr = document.getElementById('report-date').value || getLocalISO(new Date());
+            document.getElementById('ape-fondo').value = db.fondos[dateStr] || '';
+            openModal('modal-apertura');
+            setTimeout(() => document.getElementById('ape-fondo').focus(), 100);
+        }
+        
+        function saveApertura() {
+            const dateStr = document.getElementById('report-date').value || getLocalISO(new Date());
+            const val = parseFloat(document.getElementById('ape-fondo').value) || 0;
+            db.fondos[dateStr] = val;
+            db.isCajaAbierta = true;
+            saveData();
+            closeModal('modal-apertura');
+            checkCajaState();
+            showToast(`Caja abierta con fondo de $${val.toFixed(2)}`);
+        }
+
+        function openArqueoModal() {
+            const dateStr = document.getElementById('report-date').value || getLocalISO(new Date());
+            document.getElementById('arq-fondo').value = db.fondos[dateStr] || 0;
+            document.getElementById('arq-fisico').value = 0;
+            calcArqueo();
+            openModal('modal-arqueo');
+        }
+        
+        function calcArqueo() {
+            const sales = parseFloat(document.getElementById('arq-sales').dataset.val || 0);
+            const fondo = parseFloat(document.getElementById('arq-fondo').value) || 0;
+            const fisico = parseFloat(document.getElementById('arq-fisico').value) || 0;
+            
+            const expected = sales + fondo;
+            const diff = fisico - expected;
+            
+            const diffEl = document.getElementById('arq-diff');
+            const msgEl = document.getElementById('arq-msg');
+            
+            diffEl.innerText = `$${Math.abs(diff).toFixed(2)}`;
+            if(diff === 0) {
+                diffEl.className = 'text-xl font-extrabold text-emerald-400';
+                msgEl.innerHTML = '<span class="text-emerald-400"><i class="fa-solid fa-check-circle"></i> Caja Cuadrada Perfectamente</span>';
+            } else if(diff < 0) {
+                diffEl.className = 'text-xl font-extrabold text-rose-400';
+                msgEl.innerHTML = '<span class="text-rose-400"><i class="fa-solid fa-triangle-exclamation"></i> Faltante de dinero</span>';
+            } else {
+                diffEl.className = 'text-xl font-extrabold text-indigo-400';
+                msgEl.innerHTML = '<span class="text-indigo-400"><i class="fa-solid fa-info-circle"></i> Sobrante de dinero</span>';
+            }
+        }
+
+        /* ================= USERS MANAGEMENT ================= */
+        function renderUsers() {
+            const tb = document.getElementById('users-tbody');
+            tb.innerHTML = db.users.map(u => `
+                <tr class="hover:bg-slate-800/50 transition">
+                    <td class="p-4 font-bold text-white">${u.name}</td>
+                    <td class="p-4"><span class="px-2 py-1 rounded text-xs ${u.role==='Administrador'?'bg-rose-500/20 text-rose-400':'bg-indigo-500/20 text-indigo-400'}">${u.role}</span></td>
+                    <td class="p-4 font-mono text-slate-400">****</td>
+                    <td class="p-4 text-center">
+                        <button onclick="editUser('${u.pin}')" class="text-indigo-400 hover:text-indigo-300 p-1 mx-1"><i class="fa-solid fa-pen"></i></button>
+                        <button onclick="delUser('${u.pin}')" class="text-rose-400 hover:text-rose-300 p-1 mx-1"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+        function openUserModal() {
+            document.getElementById('user-modal-title').innerText = 'Nuevo Usuario';
+            document.getElementById('frm-user-old-pin').value = '';
+            document.getElementById('frm-user-name').value = '';
+            document.getElementById('frm-user-role').value = 'Cajero';
+            document.getElementById('frm-user-pin').value = '';
+            openModal('modal-user');
+        }
+        function editUser(pin) {
+            const u = db.users.find(x => x.pin === pin);
+            document.getElementById('user-modal-title').innerText = 'Editar Usuario';
+            document.getElementById('frm-user-old-pin').value = u.pin;
+            document.getElementById('frm-user-name').value = u.name;
+            document.getElementById('frm-user-role').value = u.role;
+            document.getElementById('frm-user-pin').value = u.pin;
+            openModal('modal-user');
+        }
+        function saveUser() {
+            const oldPin = document.getElementById('frm-user-old-pin').value;
+            const name = document.getElementById('frm-user-name').value.trim();
+            const role = document.getElementById('frm-user-role').value;
+            const pin = document.getElementById('frm-user-pin').value.trim();
+
+            if(!name || pin.length < 4) { showToast('Nombre y PIN (4 dígitos) requeridos', 'error'); return; }
+            if(oldPin !== pin && db.users.find(u => u.pin === pin)) { showToast('Este PIN ya está en uso', 'error'); return; }
+
+            if(oldPin) {
+                const idx = db.users.findIndex(u => u.pin === oldPin);
+                db.users[idx] = { pin, name, role };
+            } else {
+                db.users.push({ pin, name, role });
+            }
+            saveData();
+            closeModal('modal-user');
+            renderUsers();
+            showToast('Usuario guardado');
+        }
+        function delUser(pin) {
+            if(db.users.length <= 1) { showToast('Debe haber al menos un usuario', 'error'); return; }
+            const u = db.users.find(x => x.pin === pin);
+            askConfirm('Eliminar Usuario', `¿Seguro que deseas eliminar a ${u.name}?`, () => {
+                db.users = db.users.filter(x => x.pin !== pin);
+                saveData();
+                renderUsers();
+                showToast('Usuario eliminado');
+            });
+        }
+
+        /* ================= CORTE DE CAJA ================= */
+        function realizarCorte() {
+            askConfirm('Corte y Cierre de Caja', '¿Generar Corte de Caja y CERRAR las ventas del turno?', () => {
+                const dateStr = document.getElementById('report-date').value || getLocalISO(new Date());
+                const [y, m, d] = dateStr.split('-');
+                const targetDate = new Date(y, m-1, d).toLocaleDateString();
+                const daySales = db.sales.filter(s => new Date(s.date).toLocaleDateString() === targetDate);
+                
+                let tTotal = 0, tCash = 0, tDig = 0;
+                daySales.forEach(s => {
+                    tTotal += s.total;
+                    if(s.method === 'Efectivo') tCash += s.total;
+                    if(s.method === 'Tarjeta') tDig += s.total;
+                });
+                const fondo = db.fondos[dateStr] || 0;
+                const fisico = parseFloat(document.getElementById('arq-fisico').value) || 0;
+                const diff = fisico - (fondo + tCash);
+                
+                const ps = document.getElementById('print-section');
+                const cfg = db.config;
+                const dNow = new Date();
+                
+                let html = `
+                    <div style="text-align:center; margin-bottom:10px;">
+                        <strong>${cfg.name}</strong><br>
+                        ${cfg.branch}<br>
+                        <strong>CORTE DE CAJA (X/Z)</strong><br>
+                        --------------------------------<br>
+                        Fecha de Corte: ${targetDate}<br>
+                        Impreso: ${dNow.toLocaleDateString()} ${dNow.toLocaleTimeString()}<br>
+                        Generado por: ${currentUser.name}
+                    </div>
+                    <hr style="border-top:1px dashed black;">
+                    <table style="width:100%; margin:10px 0; font-size:12px;">
+                        <tr><td>Fondo Inicial:</td><td style="text-align:right;">$${fondo.toFixed(2)}</td></tr>
+                        <tr><td>Ventas Efectivo:</td><td style="text-align:right;">$${tCash.toFixed(2)}</td></tr>
+                        <tr><td>Ventas Tarjeta/SPEI:</td><td style="text-align:right;">$${tDig.toFixed(2)}</td></tr>
+                        <tr><td><strong>Total Ventas:</strong></td><td style="text-align:right;"><strong>$${tTotal.toFixed(2)}</strong></td></tr>
+                        <tr><td><strong>Efectivo Esperado:</strong></td><td style="text-align:right;"><strong>$${(fondo + tCash).toFixed(2)}</strong></td></tr>
+                        <tr><td><strong>Efectivo Físico:</strong></td><td style="text-align:right;"><strong>$${fisico.toFixed(2)}</strong></td></tr>
+                        <tr><td>Diferencia:</td><td style="text-align:right;">$${diff.toFixed(2)}</td></tr>
+                        <tr><td>Tickets Emitidos:</td><td style="text-align:right;">${daySales.length}</td></tr>
+                    </table>
+                    <hr style="border-top:1px dashed black;">
+                    <div style="text-align:center; font-size:11px; margin-top:10px;">
+                        *** FIN DEL CORTE ***
+                    </div>
+                `;
+                ps.innerHTML = html;
+                window.print();
+                
+                // Guardar registro histórico del corte y cerrar caja
+                db.cortes.push({ id: Date.now(), date: dNow.toISOString(), targetDate: dateStr, total: tTotal, fisico: fisico, diff: diff, user: currentUser.name });
+                db.isCajaAbierta = false;
+                saveData();
+                closeModal('modal-arqueo');
+                checkCajaState();
+                showToast('Corte de Caja Generado. Caja Cerrada.');
+            });
+        }
+    </script>
+</body>
+</html>
